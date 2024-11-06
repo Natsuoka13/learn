@@ -1,0 +1,38 @@
+---остатки для проекта автозакуп
+
+
+SELECT ---city_id,
+       city,
+      --- department_id,
+       ---is_mini,
+       d.title                            as "Склад-Магазин",
+       ---m.nomenclature_id                  as n_id,
+       ---m.menu_product_id                  as m_id,
+
+       ---n.supply_price                     as "Себестоимость",
+       ---start_date                         as "Вроде дата страрта продаж",
+       ---expiration                         as "СГ",
+       second_product_category            as "УИ2",     
+      --- third_product_category             as "УИ3",
+     ---  fourth_product_category            as "УИ4",
+       n.title                            as "Блюдо",
+       real_supplier                      as "Поставщик",
+       package_volume                     as "Квант",
+       sum(amount)                        as "ТовОст, шт"
+    ---"ТовОст, шт" * avg(n.supply_price) as "ТовОст, руб",
+
+
+
+from movement_jm m
+         left join departments d on m.department_id = d.id
+         left join nomenclature_jm n on m.nomenclature_id = n.id
+where
+    type LIKE '%а вече%'
+    and movement_date = '2024-10-29'
+
+    and  is_mini = 0
+
+
+
+
+group by city, d.title, m.menu_product_id, second_product_category, n.title, real_supplier, package_volume;
