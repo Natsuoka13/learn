@@ -1,0 +1,54 @@
+WITH billcontent AS (
+    SELECT 
+        bc.bcID, 
+        bc.bID, 
+        rp.UpTo, 
+        rp.Since
+    FROM dbo.BillContent AS bc
+    LEFT JOIN dbo.RetailPacks AS rp 
+        ON bc.bcID = rp.bcID
+    WHERE bc.Product = 'Контур-Экстерн'
+),
+ranked_bills AS (
+    SELECT
+        c.Name,
+        c.Inn,
+        b.Num,
+        b.BDate,
+        b.PayDate,
+        bc2.Since, 
+        bc2.UpTo,
+        bc2.bID,
+        CASE 
+            WHEN '2021-01-01' BETWEEN bc2.Since AND bc2.UpTo THEN 1
+            ELSE 2
+        END AS filter,
+        ROW_NUMBER() OVER (PARTITION BY c.Inn ORDER BY bc2.UpTo DESC) AS upToMaxRank,
+        ROW_NUMBER() OVER (PARTITION BY c.Inn ORDER BY b.PayDate DESC) AS payDateMaxRank
+    FROM dbo.Clients c
+    LEFT JOIN dbo.Bills b 
+        ON b.cID = c.cID
+    INNER JOIN billcontent bc2 
+        ON b.bID = bc2.bID
+)
+
+SELECT 
+    rb.Name, 
+    rb.Inn, 
+    rb.Num, 
+    rb.BDate, 
+    rb.PayDate, 
+    SUM(bc3.Cost) AS BillSum, 
+    SUM(bc3.Paid) AS BillPay
+FROM ranked_bills rb
+LEFT JOIN dbo.BillContent bc3 
+    ON rb.bID = bc3.bID
+WHERE (rb.UpTo IS NOT NULL AND rb.upToMaxRank = 1)
+   OR (rb.UpTo IS NULL AND rb.payDateMaxRank = 1)
+GROUP BY 
+    rb.Name, 
+    rb.Inn, 
+    rb.Num, 
+    rb.BDate, 
+    rb.PayDate
+ORDER BY rb.Name;
